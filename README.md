@@ -1,1 +1,1 @@
-การทำงานของ  Ownership 
+ Ownership 
