@@ -14,7 +14,7 @@
 | 1 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Concept + Code |
 | 2 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Code + Demo |
 | 3 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Rust vs Other Language + PPL |
-| 4 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Exercises + Common Mistakes |
+| 4 | `Sothea Sokea` | `670710258` | `@sotheasokea` | Exercises + Common Mistakes |
 
 ---
 
@@ -165,51 +165,224 @@ fn main() {
 
 ## 7. Common Mistakes
 
-### Mistake 1 — `[ชื่อข้อผิดพลาด]`
+### Mistake 1 — `การพยายามใช้ค่าที่ถูกย้าย (Move) ไปแล้ว`
 
 **Problem**
 
-`[อธิบายปัญหา]`
+`เมื่อ my_name ถูกส่งไปยังฟังก์ชัน print_name() สิทธิ์ความเป็นเจ้าของ (ownership) ของ String จะถูกย้ายไปยังฟังก์ชันนั้น ดังนั้น my_name จึงไม่สามารถนำมาใช้งานต่อใน main() ได้`
 
 **Incorrect Code**
 
 ```rust
-// Incorrect example
+fn print(message: String){
+  println!("{}", message);
+}
+
+fn main(){
+   let message = String::from("It's not okay!");
+   print(message);
+   println!("{}", message);
+}
 ```
 
 **Correct Code**
 
 ```rust
-// Correct example
+fn print(message: String){
+  println!("{}", message);
+}
+
+fn main(){
+   let message = String::from("It's not okay!");
+   print(message.clone());
+   println!("{}", message);
+}
 ```
 
 **Why?**
 
-`[อธิบายสาเหตุ]`
+`.clone() จะสร้าง สำเนาแบบ deep copy ของ String จัดสรรหน่วยความจำ heap ใหม่ แต่มีเนื้อหาเดียวกัน ตัว clone นี่แหละที่จะถูกย้ายเข้าไปใน print ส่วน message ตัวเดิมใน main ไม่ถูกแตะต้องเลย จึงยังใช้งานต่อได้หลังจากนั้น`
 
 ---
 
-### Mistake 2 — `[ชื่อข้อผิดพลาด]`
+### Mistake 2 — `การคืนค่า Reference ของตัวแปรแบบ Local (Dangling Pointer)`
 
 **Problem**
 
-`[อธิบายปัญหา]`
+`message เป็นตัวแปร local ที่ถูกสร้างขึ้นภายในฟังก์ชัน เมื่อฟังก์ชันทำงานจบและ return ออกมา ตัวแปร message จะหลุดออกจาก scope และถูก drop (หน่วยความจำของมันจะถูกคืนกลับไป/ถูกลบทิ้งไป)`
 
 **Incorrect Code**
 
 ```rust
-// Incorrect example
+fn get_message()-> &String{
+  let message = String::from("will this work?");
+  &message
+}
+
+fn main(){
+   let message = get_message();
+}
 ```
 
 **Correct Code**
 
 ```rust
-// Correct example
+fn get_message()-> String{
+  let message = String::from("will this work?");
+  message
+}
+
+fn main(){
+   let message = get_message();
+   println!("{}", message);
+}
 ```
 
 **Why?**
 
-`[อธิบายสาเหตุ]`
+`return message ตัวมันเอง ไม่ใช่ reference ของมัน ใน Rust เมื่อ return ค่าแบบเป็นเจ้าของ (owned value) แบบนี้ ความเป็นเจ้าของ (ownership) จะถูกย้าย ออกจากฟังก์ชันไปให้ผู้เรียกใช้ String จะไม่ถูก drop ตอนฟังก์ชันจบ แต่จะถูกส่งต่อไปแทน และตัวแปร message ใน main ก็จะกลายเป็นเจ้าของข้อมูลตัวเดียวกันนี้แทน`
+
+---
+### Mistake 3 — `การใช้ Mutable และ Immutable Reference ปะปนกัน`
+
+**Problem**
+
+`ในเวลาเดียวกัน คุณสามารถมี immutable reference (&T) ได้หลายตัว หรือ mutable reference (&mut T) ได้แค่ตัวเดียว แต่จะมี ทั้งสองแบบพร้อมกันไม่ได้`
+
+**Incorrect Code**
+
+```rust
+fn main(){
+   let mut message = String::from("one kind active, different can't borrow");
+   let m1 = &message;
+   let m2 = &message;
+   let m3 = &mut message;
+
+   println!("{} {} {}", m1, m2, m3);
+}
+```
+
+**Correct Code**
+
+```rust
+fn main(){
+   let mut message = String::from("one kind active, different can't borrow");
+   let m1 = &message;
+   let m2 = &message;
+   println!("{} {}", m1, m2);
+
+   let m3 = &mut message;
+   println!("{}", m3);
+}
+```
+
+**Why?**
+
+`+ m1, m2 ถูกใช้ครั้งสุดท้ายที่ println!("{} {}", m1, m2); → หลังจากบรรทัดนี้ borrow ของทั้งคู่ก็ "จบ" ทันที (ไม่ต้องรอถึงปิด } ของ main)`
+
+`+ พอถึงบรรทัด let m3 = &mut message; ไม่มี immutable borrow ไหนยังค้างอยู่แล้ว เพราะฉะนั้นการสร้าง mutable borrow (m3) จึงไม่ไปซ้อนทับกับ m1, m2`
+
+---
+### Mistake 4 — `การแก้ไข Collection ในขณะที่กำลังวนลูป (Iterating) อยู่`
+
+**Problem**
+
+`ไม่สามารถเปลี่ยนขนาดหรือข้อมูลภายใน Vector หรือ Map ได้ในขณะที่กำลังวนลูปอ่านค่าอยู่ เนื่องจากตัวลูปเองกำลังถือครอง Reference ของ Collection นั้นเอาไว้`
+
+**Incorrect Code**
+
+```rust
+fn main(){
+   let mut numbers = vec![1, 2, 3];
+
+  for num in &numbers {
+      if *num == 2 {
+          numbers.push(4);
+      }
+  }
+}
+```
+
+**Correct Code**
+
+```rust
+fn main(){
+  let mut numbers = vec![1, 2, 3];
+  let mut nums = vec![];
+  for num in &numbers {
+      if *num == 2 {
+          nums.push(4);
+      }
+  }
+  numbers.extend(nums);
+  println!("{:?}", numbers);
+}
+```
+
+**Why?**
+
+`ในระหว่าง loop for num in &numbers จะถือ immutable borrow ของ numbers ตลอดทั้ง loop แต่สังเกตว่าในนี้ ไม่มีตรงไหนพยายามแก้ไข numbers เลย แก้ไขแค่ nums ซึ่งเป็น Vec เปล่าๆ อีกตัวที่ไม่เกี่ยวข้องกับ borrow เดิมเลย ดังนั้นจึงไม่มีการชนกัน อ่าน numbers และเขียนลง nums ซึ่งเป็นคนละหน่วยความจำกัน ไม่มี overlap`
+
+---
+### Mistake 5 — `Anti-Pattern: "Clone ทุกอย่าง"`
+
+**Problem**
+
+`แม้จะไม่ใช่ข้อผิดพลาดระดับคอมไพเลอร์ แต่นี่คือข้อผิดพลาดทางพฤติกรรม เมื่อ Borrow Checker แจ้งเตือนข้อผิดพลาด ผู้เริ่มต้นมักจะใส่ .clone() ไว้ในทุกตัวแปรเพียงเพื่อบังคับให้โค้ดสามารถคอมไพล์ผ่าน`
+
+**Incorrect Code**
+
+```rust
+struct User {
+    name: String,
+    email: String,
+    bio: String,
+}
+
+fn print_name(name: String) {   // รับแบบ owned โดยไม่จำเป็น
+    println!("{}", name);
+}
+
+fn main() {
+    let user = User {
+        name: String::from("Alice"),
+        email: String::from("alice@su.ac.th"),
+        bio: String::from("no bio added"),
+    };
+
+    print_name(user.name.clone());   // clone() ทั้งที่แค่จะ print เฉยๆ
+    println!("{}", user.name);       // ต้องใช้ user.name ต่อ เลย clone ไปก่อน
+}
+```
+
+**Correct Code**
+
+```rust
+struct User {
+    name: String,
+    email: String,
+    bio: String,
+}
+
+fn print_name(name: &str) {      // ยืมแค่ &str แทนที่จะรับ owned String
+    println!("{}", name);
+}
+
+fn main() {
+    let user = User {
+        name: String::from("Alice"),
+        email: String::from("alice@su.ac.th"),
+        bio: String::from("no bio added"),
+    };
+
+    print_name(&user.name);      // แค่ยืม ไม่ต้อง clone
+    println!("{}", user.name);   // ยังใช้งานได้ปกติ เพราะไม่มีอะไรถูกย้ายหรือลบไปไหน
+}
+```
+
+**Why?**
+
+`การถอยกลับมาทบทวนโครงสร้างโปรแกรมใหม่: พิจารณาว่าตัวแปรใดควรเป็นเจ้าของข้อมูลอย่างแท้จริง และให้ส่วนที่เหลือในโค้ดทำการยืม (Borrow) ไปใช้แทน`
 
 ---
 
