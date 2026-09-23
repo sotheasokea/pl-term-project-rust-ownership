@@ -1,38 +1,447 @@
-# Ownership ในส่วนที่ 3 Rust vs Other Language + PPL Analysis (เปรียบเทียบภาษา + วิเคราะห์เชิง PPL)
-<h2> Memory Management </h2>
-การจัดการ Memory Management การจัดการหน่วยความจำ (Memory Management) ในภาษาโปรแกรมคือกระบวนการจัดสรร (Allocation) พื้นที่หน่วยความจำเมื่อโปรแกรมต้องการใช้งาน และการคืนค่า (Deallocation) พื้นที่นั้นเมื่อเลิกใช้ เพื่อไม่ให้เปลืองทรัพยากร 
-<br>
-<strong>ประเภทการจัดการหน่วยความจำ</strong>
-<br>
-ถูกแบ่งเป็น 3 ประเภท
-<br>
-<strong>1. การจัดการแบบ manual (Manual Memory Management)</strong><br>
-ผู้เขียนโปรแกรมต้องสั่งจองและคืนหน่วยความจำด้วยตัวเอง<br>
-ภาษาที่ใช้คือ  C, C++ (new/delete, malloc/free)<br>
-ข้อดี: ประสิทธิภาพสูง ควบคุมการใช้ทรัพยากรได้แม่นยำและรวดเร็ว <br>
-ข้อเสีย: หากลืมคืนหน่วยความจำจะเกิดปัญหา Memory Leak (หน่วยความจำรั่วไหล) หรือการเข้าถึงหน่วยความจำที่ไม่ถูกต้อง (Segmentation Fault) <br>
-<strong>2. การจัดการแบบอัตโนมัติ (Automatic Memory Management)</strong><br>
- มีระบบช่วยเคลียร์หน่วยความจำที่ไม่ได้ใช้แล้วออกให้อัตโนมัติ<br>
- เทคนิคที่นิยมใช้ Garbage Collection (GC): ระบบคอยกวาดล้างข้อมูลใน Heap ที่ไม่มีการอ้างถึงแล้ว (พบใน Java, Python, JavaScript, Go) <br>
- Reference Counting: นับจำนวนตัวแปรที่ชี้ไปยังข้อมูลนั้น หากลดลงเหลือศูนย์จะถูกทำลายทันที (พบใน Swift) <br>
- ภาษาที่ใช้คือ Java, Python, JavaScript, Go, C# <br>
- ข้อดี: ปลอดภัย ลดข้อผิดพลาดของมนุษย์ เขียนโค้ดได้ง่ายขึ้น <br>
- ข้อเสีย: เปลืองทรัพยากร CPU ในการรันตัว Garbage Collector และอาจทำให้โปรแกรมสะดุดชั่วขณะ (Stop-the-world / Latency) <br>
- <strong>3.ความเป็นเจ้าของ (Ownership)</strong><br>
- Ownershipของ Rust คือการจัดการหน่วยความจำที่ไม่มี Garbage Collector และไม่ต้องสั่งคืนหน่วยความจำด้วยตัวเอง โดยคอมไพเลอร์ของ Rust จะเป็นผู้ตรวจสอบความปลอดภัยทำให้ได้โปรแกรมที่ทำงานเร็วเท่าภาษา C/C++ แต่ปลอดภัยจากการทำหน่วยความจำรั่วไหล (Memory Leak)<br>
- ข้อดี: ปลอดภัยสูงมาก ป้องกันปัญหาที่เกิดขึ้นบ่อยในภาษา C/C++ เช่น Data Races, Dangling Pointers และ Double Free ได้ตั้งแต่ตอนคอมไพล์โค้ด <br>
- ลดข้อผิดพลาดของมนุษย์โดยไม่ต้องมี GC: คอมไพเลอร์ทำหน้าที่เป็นผู้ตรวจจับข้อผิดพลาดให้ ทำให้ไม่มีโอกาสลืมคืนหน่วยความจำ (Memory Leak) เหมือนการเขียน Manual<br>
- ทำงานได้รวดเร็วและกินทรัพยากรน้อยมากเท่าภาษา C/C++ เนื่องจากโปรแกรมจะรู้ตำแหน่งและเวลาที่ต้องคืนหน่วยความจำล่วงหน้าตั้งแต่ตอนคอมไพล์แล้ว  เนื่องจากไม่มีระบบ Garbage Collector รันอยู่เบื้องหลังในตอนที่โปรแกรมทำงาน (Runtime) ทำให้โปรแกรมไม่สะดุดชั่วขณะ เหมาะกับระบบที่ต้องการความเร็วแบบเรียลไทม์ (Real-time system)<br>
- ข้อเสีย: เขียนโค้ดได้ยากขึ้นและใช้เวลาเรียนรู้สูงมาก (Steep Learning Curve): ผู้พัฒนาต้องทำความเข้าใจและ "ต่อสู้กับคอมไพเลอร์"  เพื่อเขียนโค้ดให้ถูกกฎของ Ownership
- เวลาในการคอมไพล์นานขึ้น (Long Compile Times): เนื่องจากการตรวจสอบกฎ Ownership, การคำนวณอายุขัยตัวแปร (Lifetimes) และการวิเคราะห์โค้ดทั้งหมดทำในขั้นตอนคอมไพล์ ทำให้ใช้เวลาสร้างไฟล์รัน (Build) นานกว่าภาษาอื่น <br>
-<h2> เจาะลึก Ownership ของภาษา Rust </h2> 
- 
- 
- 
- 
+# Rust Tutorial Project — Principles of Programming Languages
 
+> **สำหรับนักศึกษา:** ใช้ไฟล์นี้เป็น Template สำหรับจัดทำบทเรียน Rust ของกลุ่ม  
+> **Topic No.:** `XX`  
+> **Topic Name:** `[ชื่อหัวข้อ]`  
+> **Group No.:** `XX`
 
+---
 
+## 1. Members
 
+| # | Name | Student ID | GitHub Username | Main Responsibility |
+|---|---|---|---|---|
+| 1 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Concept + Code |
+| 2 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Code + Demo |
+| 3 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Rust vs Other Language + PPL |
+| 4 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Exercises + Common Mistakes |
 
+---
 
+## 2. Learning Objectives
+
+หลังจากศึกษา Topic นี้แล้ว ผู้เรียนสามารถ:
+
+1. `[อธิบายแนวคิดสำคัญได้]`
+2. `[เขียนโปรแกรม Rust ที่เกี่ยวข้องได้]`
+3. `[วิเคราะห์พฤติกรรม/กฎของภาษาได้]`
+4. `[เปรียบเทียบ Rust กับภาษาอื่นได้]`
+
+---
+
+## 3. Introduction
+
+อธิบายว่า Topic นี้คืออะไร มีความสำคัญอย่างไร และใช้แก้ปัญหาอะไรในการเขียนโปรแกรม
+
+`[เขียนเนื้อหาที่นี่]`
+
+---
+
+## 4. Key Concepts
+
+### 4.1 `[Concept 1]`
+
+**คำอธิบาย**
+
+`[อธิบายแนวคิด]`
+
+**ตัวอย่าง**
+
+```rust
+fn main() {
+    println!("Hello, Rust!");
+}
+```
+
+**Explanation**
+
+`[อธิบายว่า code ทำงานอย่างไร]`
+
+---
+
+### 4.2 `[Concept 2]`
+
+`[อธิบายแนวคิด]`
+
+```rust
+// Rust code
+```
+
+---
+
+### 4.3 `[Concept 3]`
+
+`[อธิบายแนวคิด]`
+
+```rust
+// Rust code
+```
+
+---
+
+### 4.4 `[Concept 4 — ถ้ามี]`
+
+`[อธิบายแนวคิด]`
+
+```rust
+// Rust code
+```
+
+---
+
+### 4.5 `[Concept 5 — ถ้ามี]`
+
+`[อธิบายแนวคิด]`
+
+```rust
+// Rust code
+```
+
+---
+
+## 5. Important Syntax / Rules
+
+| Syntax / Rule | Meaning | Example |
+|---|---|---|
+| `[syntax/rule]` | `[ความหมาย]` | `[ตัวอย่าง]` |
+| `[syntax/rule]` | `[ความหมาย]` | `[ตัวอย่าง]` |
+| `[syntax/rule]` | `[ความหมาย]` | `[ตัวอย่าง]` |
+
+### Important Rules
+
+1. `[กฎสำคัญข้อที่ 1]`
+2. `[กฎสำคัญข้อที่ 2]`
+3. `[กฎสำคัญข้อที่ 3]`
+
+---
+
+## 6. Runnable Code Examples
+
+> **ข้อกำหนด:** Code ทุกตัวต้อง Compile และ Run ได้จริงก่อนนำมาใส่ในเอกสาร
+
+### Example 1 — `[ชื่อ Example]`
+
+**Purpose:** `[ต้องการสาธิตอะไร]`
+
+```rust
+fn main() {
+    // Write your runnable Rust code here
+}
+```
+
+**Expected Output**
+
+```text
+[expected output]
+```
+
+**Explanation**
+
+`[อธิบาย code ทีละส่วนที่สำคัญ]`
+
+---
+
+### Example 2 — `[ชื่อ Example]`
+
+**Purpose:** `[ต้องการสาธิตอะไร]`
+
+```rust
+fn main() {
+    // Write your runnable Rust code here
+}
+```
+
+**Expected Output**
+
+```text
+[expected output]
+```
+
+**Explanation**
+
+`[อธิบาย code]`
+
+---
+
+## 7. Common Mistakes
+
+### Mistake 1 — `[ชื่อข้อผิดพลาด]`
+
+**Problem**
+
+`[อธิบายปัญหา]`
+
+**Incorrect Code**
+
+```rust
+// Incorrect example
+```
+
+**Correct Code**
+
+```rust
+// Correct example
+```
+
+**Why?**
+
+`[อธิบายสาเหตุ]`
+
+---
+
+### Mistake 2 — `[ชื่อข้อผิดพลาด]`
+
+**Problem**
+
+`[อธิบายปัญหา]`
+
+**Incorrect Code**
+
+```rust
+// Incorrect example
+```
+
+**Correct Code**
+
+```rust
+// Correct example
+```
+
+**Why?**
+
+`[อธิบายสาเหตุ]`
+
+---
+
+## 8. Exercises
+
+> จัดทำแบบฝึกหัด **2 ข้อ** ที่สอดคล้องกับ Topic และมีระดับความยากเหมาะสม
+
+### Exercise 1 — `[ชื่อโจทย์]`
+
+**Problem**
+
+`[เขียนโจทย์]`
+
+**Hint**
+
+`[คำใบ้]`
+
+**Solution**
+
+```rust
+// Solution code
+```
+
+**Explanation**
+
+`[อธิบายแนวทางแก้]`
+
+---
+
+### Exercise 2 — `[ชื่อโจทย์]`
+
+**Problem**
+
+`[เขียนโจทย์]`
+
+**Hint**
+
+`[คำใบ้]`
+
+**Solution**
+
+```rust
+// Solution code
+```
+
+**Explanation**
+
+`[อธิบายแนวทางแก้]`
+
+---
+
+## 9. PPL Perspective
+
+> **ส่วนนี้เป็นหัวใจของรายวิชา Principles of Programming Languages**
+
+วิเคราะห์ Topic นี้ในมุมมองของ Programming Languages
+ส่วนนี้จะวิเคราะห์แนวคิด Ownership ของภาษา Rust ในมุมมองของ Principles of Programming Languages (PPL) โดยเน้นศึกษาว่าแนวคิด Ownership ถูกกำหนดและบังคับใช้ผ่านองค์ประกอบของภาษาอย่างไร รวมถึงผลที่เกิดขึ้นต่อพฤติกรรมของโปรแกรมและการจัดการทรัพยากร
+
+### 9.1 Syntax
+
+อธิบายรูปแบบ Syntax ที่เกี่ยวข้องกับ Ownership เช่น การประกาศตัวแปร การกำหนดค่า และการส่งค่าระหว่างตัวแปร โดยเน้นให้เห็นว่า Syntax เหล่านี้สามารถเกี่ยวข้องกับการเปลี่ยนแปลง Ownership ของข้อมูลได้อย่างไร
+
+### 9.2 Semantics
+
+วิเคราะห์ความหมายและพฤติกรรมของคำสั่งที่เกี่ยวข้องกับ Ownership โดยเฉพาะกรณีที่การกำหนดค่าหรือการส่งค่าไปยังส่วนอื่นของโปรแกรมทำให้ Ownership เปลี่ยนแปลง ซึ่งส่งผลต่อการใช้งานตัวแปรเดิมในภายหลัง
+
+### 9.3 Type System
+
+อธิบายความสัมพันธ์ระหว่าง Ownership และ Type System ของ Rust โดยเน้นบทบาทของ Compiler ในการตรวจสอบการใช้งานข้อมูลให้เป็นไปตามกฎของภาษา และป้องกันการใช้งาน Value ที่ไม่ถูกต้องตั้งแต่ Compile Time
+
+### 9.4 Memory / Resource Management
+
+วิเคราะห์ Ownership ในฐานะกลไกสำหรับจัดการ Memory และ Resource ของโปรแกรม โดยพิจารณาความสัมพันธ์ระหว่าง Owner, Scope และการทำลาย Resource เมื่อ Ownership สิ้นสุดลง รวมถึงแนวทางที่ Rust ใช้ในการจัดการ Resource โดยไม่จำเป็นต้องพึ่งพา Garbage Collector
+
+### 9.5 Abstraction / Other PPL Concepts
+วิเคราะห์ Ownership ในฐานะ Abstraction สำหรับควบคุมอายุการใช้งานและความรับผิดชอบต่อ Resource ของโปรแกรม โดยเชื่อมโยงกับแนวคิดเรื่อง Scope, Binding และ Resource Management ใน Programming Languages
+
+### 9.6 Why Rust?
+
+อธิบายเหตุผลเชิงการออกแบบภาษา (Language Design) ที่ Rust เลือกใช้ Ownership เป็นส่วนหนึ่งของระบบภาษา โดยมุ่งให้สามารถตรวจสอบข้อผิดพลาดด้าน Memory และ Resource Management ในช่วง Compile Time พร้อมทั้งรักษาประสิทธิภาพของโปรแกรมโดยไม่จำเป็นต้องใช้ Garbage Collector
+
+---
+
+## 10. Rust vs. Other Language
+
+**Comparison Language:** `[Python / C / C++ / Java / Kotlin / ...]`
+
+| Aspect | Rust | Other Language |
+|---|---|---|
+| Syntax | `[อธิบาย]` | `[อธิบาย]` |
+| Semantics / Behavior | `[อธิบาย]` | `[อธิบาย]` |
+| Type System | `[อธิบาย]` | `[อธิบาย]` |
+| Memory Management | `[อธิบาย]` | `[อธิบาย]` |
+| Safety | `[อธิบาย]` | `[อธิบาย]` |
+
+### Rust Example
+
+```rust
+// Rust code
+```
+
+### `[Other Language]` Example
+
+```python
+# Other language code
+```
+
+### Analysis
+
+`[อธิบายความแตกต่างที่สำคัญ และเหตุผลด้านการออกแบบภาษา]`
+
+---
+
+## 11. Teach Your Topic
+
+การนำเสนอมีสมาชิก **4 คน คนละประมาณ 5 นาที**
+
+| Member | Responsibility | Time |
+|---|---|---:|
+| Member 1 | Concept + Short Code Illustration | 5 min |
+| Member 2 | Detailed Code + Live Demo | 5 min |
+| Member 3 | Rust vs Other Language + PPL Analysis | 5 min |
+| Member 4 | Exercises + Common Mistakes + Challenge | 5 min |
+
+### Individual Contribution
+
+**Member 1**
+
+`[สิ่งที่รับผิดชอบ]`
+
+**Member 2**
+
+`[สิ่งที่รับผิดชอบ]`
+
+**Member 3**
+
+`[สิ่งที่รับผิดชอบ]`
+
+**Member 4**
+
+`[สิ่งที่รับผิดชอบ]`
+
+> สมาชิกทุกคนต้องสามารถอธิบาย Code ของกลุ่มได้ ไม่ใช่เฉพาะส่วนที่ตนเองเขียน
+
+---
+
+## 12. References
+
+> แนะนำให้มีอย่างน้อย **4 แหล่งอ้างอิง** และควรใช้เอกสารทางการเป็นหลัก
+
+1. `[The Rust Programming Language — Rust Book]`
+2. `[Rust by Example / Rust Reference]`
+3. `[Official documentation ที่เกี่ยวข้องกับ Topic]`
+4. `[แหล่งอ้างอิงเพิ่มเติม]`
+
+---
+
+## 13. AI Usage Declaration
+
+สามารถใช้ AI เป็นเครื่องมือช่วยเรียนรู้และพัฒนาได้ แต่สมาชิกทุกคนต้องเข้าใจและสามารถอธิบายผลงานของกลุ่มได้
+
+| AI Tool | Purpose | How the Result Was Verified |
+|---|---|---|
+| `[เช่น ChatGPT]` | `[ใช้เพื่ออะไร]` | `[ตรวจสอบอย่างไร]` |
+| `[AI tool]` | `[ใช้เพื่ออะไร]` | `[ตรวจสอบอย่างไร]` |
+
+### Declaration
+
+- [ ] Code ทุกส่วนที่นำเสนอได้รับการ Compile และทดสอบแล้ว
+- [ ] สมาชิกทุกคนสามารถอธิบาย Code ที่นำเสนอได้
+- [ ] ตรวจสอบข้อมูลจากแหล่งอ้างอิงที่น่าเชื่อถือแล้ว
+- [ ] ระบุการใช้ AI อย่างโปร่งใส
+
+**รายละเอียดการใช้ AI**
+
+`[อธิบายว่าใช้ AI ในขั้นตอนใด และสมาชิกตรวจสอบผลลัพธ์อย่างไร]`
+
+---
+
+## 14. GitHub Contribution
+
+| Member | Issues | Commits | Pull Requests | Code Reviews | Contribution |
+|---|---:|---:|---:|---:|---|
+| Member 1 | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[รายละเอียด]` |
+| Member 2 | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[รายละเอียด]` |
+| Member 3 | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[รายละเอียด]` |
+| Member 4 | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[จำนวน]` | `[รายละเอียด]` |
+
+### Teamwork Reflection
+
+**How did your team collaborate?**
+
+`[อธิบายกระบวนการทำงานร่วมกัน]`
+
+**Problems encountered**
+
+`[ปัญหาที่พบ]`
+
+**How did you solve them?**
+
+`[วิธีแก้ปัญหา]`
+
+---
+
+## 15. Final Checklist
+
+- [ ] Learning Objectives ครบ 3–4 ข้อ
+- [ ] Key Concepts ครบถ้วน
+- [ ] Syntax / Rules
+- [ ] Runnable Code Examples
+- [ ] Code Compile และ Run ได้จริง
+- [ ] Common Mistakes
+- [ ] Exercises 2 ข้อ พร้อม Solutions
+- [ ] PPL Perspective
+- [ ] Rust vs Other Language
+- [ ] References อย่างน้อย 4 แหล่ง
+- [ ] AI Usage Declaration
+- [ ] GitHub Contribution
+- [ ] สมาชิกทั้ง 4 คนมีส่วนร่วม
+- [ ] สมาชิกทั้ง 4 คนพร้อมนำเสนอคนละ 5 นาที
+- [ ] สมาชิกทุกคนสามารถอธิบาย Code ของกลุ่มได้
+
+---
+
+## Submission Information
+
+**Repository:** `[GitHub repository URL]`
+
+**Chapter Path:** `[เช่น chapters/01-introduction/]`
+
+**Final PR:** `#[PR number]`
+
+**Submitted by:** `[Group XX]`
+
+**Date:** `[YYYY-MM-DD]`
