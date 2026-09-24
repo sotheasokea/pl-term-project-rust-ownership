@@ -390,47 +390,126 @@ fn main() {
 
 > จัดทำแบบฝึกหัด **2 ข้อ** ที่สอดคล้องกับ Topic และมีระดับความยากเหมาะสม
 
-### Exercise 1 — `[ชื่อโจทย์]`
+### Exercise 1 — `Clone or Lose It`
 
 **Problem**
 
-`[เขียนโจทย์]`
+ให้ฟังก์ชัน `describe(item: String) -> String` ที่รับความเป็นเจ้าของ `String` เข้ามา แล้ว return `String` ใหม่ในรูปแบบ `"Item: {item}"`
+ 
+ใน `main` ให้ทำตามนี้:
+1. สร้างตัวแปร `String` ชื่อ `item` ที่มีค่าเป็น `"Book"`
+2. เรียก `describe(item)` แล้ว print ผลลัพธ์
+3. print `item` อีกครั้งหลังจากนั้น
+
+เขียน main โดยไม่เปลี่ยนพฤติกรรมของ `describe` (ยังต้องรับความเป็นเจ้าของ `String` เหมือนเดิม)
+```rust
+fn describe(item: String) -> String {
+    format!("Item: {}", item)
+}
+```
 
 **Hint**
 
-`[คำใบ้]`
+``describe` รับ `item: String` แบบ by value ดังนั้นการเรียก `describe(item)` จะย้ายความเป็นเจ้าของออกไปจาก `item` ใน `main` ต้องหาวิธีที่ทำให้ `item` ยังใช้งานได้หลังจากนั้น โดยไม่เปลี่ยน signature ของ `describe` มีคำสั่งอะไรที่ช่วยให้คุณส่ง *สำเนา* ไปแทนตัวจริงได้บ้าง?`
 
 **Solution**
 
 ```rust
-// Solution code
+fn describe(item: String) -> String {
+    format!("Item: {}", item)
+}
+ 
+fn main() {
+    let item = String::from("Book");
+ 
+    let result = describe(item.clone());   // ส่งสำเนาไป เก็บตัวจริงไว้
+    println!("{}", result);
+ 
+    println!("{}", item);   // ยังใช้งานได้ เพราะตัวจริงไม่เคยถูกย้าย
+}
 ```
 
 **Explanation**
 
-`[อธิบายแนวทางแก้]`
+เนื่องจากโจทย์มีข้อบังคับว่าห้ามเปลี่ยนโครงสร้างของฟังก์ชัน describe (ไม่สามารถเปลี่ยนให้ไปรับค่าแบบยืม หรือ Reference &String ได้) ฟังก์ชันนี้จึง บังคับ ว่าต้องรับสิทธิ์ความเป็นเจ้าของไปเท่านั้น
+
++วิธีแก้คือการใช้คำสั่ง .clone() เมื่อเราเรียกใช้ describe(item.clone()):
+
+>โปรแกรมจะสร้างสำเนาของข้อความ "Book" ขึ้นมาใหม่ในหน่วยความจำ Heap อย่างสมบูรณ์แบบและแยกขาดจากกัน
+
+>ฟังก์ชัน describe จะรับเอาสิทธิ์ความเป็นเจ้าของของ ตัวสำเนา นี้ไปใช้แทน และทำลายตัวสำเนานั้นทิ้งเมื่อฟังก์ชันทำงานจบ
+
+>ตัวแปร item ต้นฉบับที่อยู่ใน main จะไม่เคยถูกย้ายสิทธิ์หรือถูกแตะต้องเลย มันจึงยังคงใช้งานได้ตามปกติและสามารถนำมาสั่งพิมพ์ในบรรทัดสุดท้ายได้
 
 ---
 
-### Exercise 2 — `[ชื่อโจทย์]`
+### Exercise 2 — `The Half-Moved Book`
 
 **Problem**
 
-`[เขียนโจทย์]`
+`คุณได้รับ struct `Book` ที่มี field เป็น `String` สองตัว และมี loop ที่ต้องการสร้าง label สำหรับแต่ละเล่ม แล้ว print ข้อมูลเต็มของแต่ละเล่มทีหลัง`
+ 
+```rust
+struct Book {
+    title: String,
+    author: String,
+}
+ 
+fn make_label(title: String) -> String {
+    format!("[{}]", title)
+}
+ 
+fn main() {
+    let books = vec![
+        Book { title: String::from("Rust programming"), author: String::from("Graydon Hoare") },
+        Book { title: String::from("C programming"), author: String::from("Dennis Ritchie") },
+    ];
+ 
+    for book in books {
+        let label = make_label(book.title);
+        println!("{}", label);
+        println!("by {} - full title: {}", book.author, book.title);
+    }
+}
+```
+โค้ดนี้ compile ไม่ผ่าน หน้าที่ของคุณคือ:
+1. หาให้ได้ว่าค่าตัวไหนถูก move และ move ที่จุดไหนกันแน่
+2. แก้โค้ดให้ compile ผ่าน **และ** print label, author, กับ full title ของแต่ละเล่มได้ถูกต้อง โดยไม่เปลี่ยนพฤติกรรมของ `make_label` (ยังต้องรับความเป็นเจ้าของ `String` เหมือนเดิม)
+3. โบนัส: ลองเขียนวิธีแก้แบบที่สองที่ต่างออกไป (มีวิธีแก้ที่ถูกต้องมากกว่าหนึ่งวิธี)
 
 **Hint**
 
-`[คำใบ้]`
+`book.title` ถูกย้ายเข้าไปใน `make_label(book.title)` หลังจากบรรทัดนั้น `book.title` ยังใช้งานได้อยู่ไหม? แล้ว field อื่นของ `book` (เช่น `book.author`) ยังใช้ได้ปกติหรือเปล่า? นี่เป็นปัญหาแบบเดียวกับการเข้าถึง field ของ struct หลังจากบางส่วนถูกย้ายไปแล้ว ลองคิดดูว่า field ไหนที่ต้องรอดจนถึงหลังจากเรียกฟังก์ชันนั้น แล้วจะทำยังไงให้มันรอด
 
 **Solution**
 
 ```rust
-// Solution code
+struct Book {
+    title: String,
+    author: String,
+}
+ 
+fn make_label(title: String) -> String {
+    format!("[{}]", title)
+}
+ 
+fn main() {
+    let books = vec![
+        Book { title: String::from("Rust programming"), author: String::from("Graydon Hoare") },
+        Book { title: String::from("C programming"), author: String::from("Dennis Ritchie") },
+    ];
+ 
+    for book in books {
+        let label = make_label(book.title.clone());
+        println!("{}", label);
+        println!("by {} - full title: {}", book.author, book.title);
+    }
+}
 ```
 
 **Explanation**
 
-`[อธิบายแนวทางแก้]`
+`ปัญหาคือ **partial move**: `book.title` ถูกย้ายเข้าไปใน `make_label` ดังนั้นหลังจากบรรทัดนั้น `book.title` จะใช้งานต่อใน `println!` ที่อ้างอิงถึง `book.title` อีกครั้งไม่ได้ ส่วน `book.author` ไม่ได้รับผลกระทบเพราะไม่ได้ถูกแตะต้อง`
 
 ---
 
