@@ -119,25 +119,27 @@ fn main() {
 
 > **ข้อกำหนด:** Code ทุกตัวต้อง Compile และ Run ได้จริงก่อนนำมาใส่ในเอกสาร
 
-### Example 1 — `[ชื่อ Example]`
+### Example 1 — `Move`
 
-**Purpose:** `[ต้องการสาธิตอะไร]`
+**Purpose:** `การเปลี่ยน ownership`
 
 ```rust
 fn main() {
-    // Write your runnable Rust code here
+    let s1 = String::from("hello");
+    let s2 = s1;
+    println!("{}", s2);
 }
 ```
 
 **Expected Output**
 
 ```text
-[expected output]
+hello
 ```
 
 **Explanation**
 
-`[อธิบาย code ทีละส่วนที่สำคัญ]`
+`ในตอนแรก s1 เป็นเจ้าของ String hello แต่พอบรรทัดต่อมามีการประกาศให้ s2 = s1 s2จึงเป็นเจ้าของ String hello แทน ถ้าเรา print s1 ก็จะ Error เพราะ Rust drop() ค่าให้แล้ว`
 
 ---
 
