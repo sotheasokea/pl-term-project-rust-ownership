@@ -139,7 +139,7 @@ hello
 
 **Explanation**
 
-`ในตอนแรก s1 เป็นเจ้าของ String hello แต่พอบรรทัดต่อมามีการประกาศให้ s2 = s1 s2จึงเป็นเจ้าของ String hello แทน ถ้าเรา print s1 ก็จะ Error เพราะ Rust drop() ค่าให้แล้ว`
+`ในตอนแรก s1 เป็นเจ้าของ String hello แต่พอบรรทัดต่อมามีการประกาศให้ s2 = s1 s2จึงเป็นเจ้าของ String hello แทน ถ้าเรา print s1 ก็จะ Error`
 
 ---
 
