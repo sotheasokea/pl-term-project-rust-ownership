@@ -169,7 +169,7 @@ Hello, world!
 
 **Explanation**
 
-`ในตอนที่เราใช้ function print_string แล้วรับparameterไป ownership ก็จะถูกย้ายไปที่ print_string ทำให้ค่า s ใน main ใช้ไม่ได้ เราจึง clone s แล้วค่อยส่งเป็น parameterไปในfunction ค่าที่ส่งก็จะเป็นค่าที่ copy มาแล้วก็จะถูก drop ตอนจบ functionไป`
+`ในตอนที่เราใช้ function print_string แล้วรับparameterไป ownership ก็จะถูกย้ายไปที่ print_string ทำให้ค่า s ใน main ใช้ไม่ได้ เราจึง clone s แล้วค่อยส่งเป็น parameterไปในfunction ค่าที่ส่งก็จะเป็นค่าที่ copy มาแล้วก็จะถูก drop ตอนจบ functionไป ค่า s ใน main ก็จะไม่ถูกแตะ ownership ก็ไม่ถูกย้าย`
 
 ---
 
