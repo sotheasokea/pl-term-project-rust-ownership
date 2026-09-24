@@ -12,7 +12,7 @@
 | # | Name | Student ID | GitHub Username | Main Responsibility |
 |---|---|---|---|---|
 | 1 | `สิริญญาธร ปุณกะบุตร` | `670710151` | `@670710151` | Concept + Code |
-| 2 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Code + Demo |
+| 2 | `อังกฤษ ถ้ำสุวรรณ` | `670710152` | `@670710152` | Code + Demo |
 | 3 | `[ชื่อ-นามสกุล]` | `[รหัส]` | `@[username]` | Rust vs Other Language + PPL |
 | 4 | `Sothea Sokea` | `670710258` | `@sotheasokea` | Exercises + Common Mistakes |
 
@@ -180,47 +180,57 @@ fn main() {
 
 > **ข้อกำหนด:** Code ทุกตัวต้อง Compile และ Run ได้จริงก่อนนำมาใส่ในเอกสาร
 
-### Example 1 — `[ชื่อ Example]`
+### Example 1 — `Move`
 
-**Purpose:** `[ต้องการสาธิตอะไร]`
+**Purpose:** `การย้าย ownership`
 
 ```rust
 fn main() {
-    // Write your runnable Rust code here
+    let s1 = String::from("hello");
+    let s2 = s1;
+    println!("{}", s2);
 }
 ```
 
 **Expected Output**
 
 ```text
-[expected output]
+hello
 ```
 
 **Explanation**
 
-`[อธิบาย code ทีละส่วนที่สำคัญ]`
+`ตอนแรก s1 ownership อยู่กับ s1 พอประกาศ s2 = s1 ownership ก็ถูกย้ายไปอยู่ที่ s2 s1ก็จะไม่สามารถใช้ได้`
 
 ---
 
-### Example 2 — `[ชื่อ Example]`
+### Example 2 — `Clone`
 
-**Purpose:** `[ต้องการสาธิตอะไร]`
+**Purpose:** `การ clone ค่าเพื่อที่จะนำไปใช้ใน function โดยที่ownershipไม่ถูกย้ายเข้าไป function ด้วย `
 
 ```rust
-fn main() {
-    // Write your runnable Rust code here
+fn main(){
+  let s: String = String::from("Hello, world!");
+  print_string(s.clone());
+  println!("{}", s); 
+}
+
+
+fn print_string(s: String) {
+  println!("{}", s);
 }
 ```
 
 **Expected Output**
 
 ```text
-[expected output]
+Hello, world!
+Hello, world!
 ```
 
 **Explanation**
 
-`[อธิบาย code]`
+`ในตอนที่เราใช้ function print_string แล้วรับparameterไป ownership ก็จะถูกย้ายไปที่ print_string ทำให้ค่า s ใน main ใช้ไม่ได้ เราจึง clone s แล้วค่อยส่งเป็น parameterไปในfunction ค่าที่ส่งก็จะเป็นค่าที่ copy มาแล้วก็จะถูก drop ตอนจบ functionไป ค่า s ใน main ก็จะไม่ถูกแตะ ownership ก็ไม่ถูกย้าย`
 
 ---
 
