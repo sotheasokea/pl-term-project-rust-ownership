@@ -204,126 +204,126 @@ fn main(){
 `.clone() จะสร้าง สำเนาแบบ deep copy ของ String จัดสรรหน่วยความจำ heap ใหม่ แต่มีเนื้อหาเดียวกัน ตัว clone นี่แหละที่จะถูกย้ายเข้าไปใน print ส่วน message ตัวเดิมใน main ไม่ถูกแตะต้องเลย จึงยังใช้งานต่อได้หลังจากนั้น`
 
 ---
-
-### Mistake 2 — `การคืนค่า Reference ของตัวแปรแบบ Local (Dangling Pointer)`
+### Mistake 2 — `เข้าใจผิดว่าการ assign คือการ copy ทั้งที่จริงๆ คือการ move`
 
 **Problem**
 
-`message เป็นตัวแปร local ที่ถูกสร้างขึ้นภายในฟังก์ชัน เมื่อฟังก์ชันทำงานจบและ return ออกมา ตัวแปร message จะหลุดออกจาก scope และถูก drop (หน่วยความจำของมันจะถูกคืนกลับไป/ถูกลบทิ้งไป)`
+`มาจากภาษาอย่าง Python, Java หรือ JS การเขียน let s2 = s1; อาจดูเหมือนแค่สร้างตัวแปรตัวที่สองที่ชี้ไปยังข้อมูลเดียวกัน แล้วใช้ได้ทั้งสองชื่อ แต่ใน Rust สำหรับ type ที่ไม่ใช่ Copy นี่คือการ move ไม่ใช่การ copy s1 จะใช้งานไม่ได้ทันทีที่ s2 ถูกสร้างขึ้น`
 
 **Incorrect Code**
 
 ```rust
-fn get_message()-> &String{
-  let message = String::from("will this work?");
-  &message
-}
-
-fn main(){
-   let message = get_message();
+fn main() {
+    let s1 = String::from("move not copy");
+    let s2 = s1;              // ความเป็นเจ้าของถูกย้ายจาก s1 ไป s2
+    println!("{}", s1);       // ERROR: s1 ใช้งานไม่ได้แล้ว
 }
 ```
 
 **Correct Code**
 
 ```rust
-fn get_message()-> String{
-  let message = String::from("will this work?");
-  message
-}
-
-fn main(){
-   let message = get_message();
-   println!("{}", message);
+fn main() {
+    let s1 = String::from("move not copy");
+    let s2 = s1.clone();           
+    println!("{}", s1);       
 }
 ```
 
 **Why?**
 
-`return message ตัวมันเอง ไม่ใช่ reference ของมัน ใน Rust เมื่อ return ค่าแบบเป็นเจ้าของ (owned value) แบบนี้ ความเป็นเจ้าของ (ownership) จะถูกย้าย ออกจากฟังก์ชันไปให้ผู้เรียกใช้ String จะไม่ถูก drop ตอนฟังก์ชันจบ แต่จะถูกส่งต่อไปแทน และตัวแปร message ใน main ก็จะกลายเป็นเจ้าของข้อมูลตัวเดียวกันนี้แทน`
+`ใช้ .clone() ถ้าต้องการให้มีเจ้าของสองตัวจริงๆ ที่เป็นอิสระจากกัน หรือใช้แค่ s2 ต่อไป แล้วเลิกพยายามใช้ s1`
 
 ---
-### Mistake 3 — `การใช้ Mutable และ Immutable Reference ปะปนกัน`
+### Mistake 3 — `Move บางส่วนออก struct (Partial move)`
 
 **Problem**
 
-`ในเวลาเดียวกัน คุณสามารถมี immutable reference (&T) ได้หลายตัว หรือ mutable reference (&mut T) ได้แค่ตัวเดียว แต่จะมี ทั้งสองแบบพร้อมกันไม่ได้`
+`การย้าย field เดียวออกจาก struct จะทำให้ struct นั้น "ใช้งานไม่ได้บางส่วน" จะใช้ struct ทั้งก้อน (หรือ field ที่ถูกย้ายไปนั้น) อีกไม่ได้ ถึงแม้ field อื่นๆ จะยังใช้งานได้ปกติก็ตาม จุดนี้มักทำให้คนงงตอนแรกที่เจอ เพราะ error message อาจดูสับสน struct ยัง "มีอยู่" แต่บาง field ในนั้นใช้ไม่ได้แล้ว`
 
 **Incorrect Code**
 
 ```rust
-fn main(){
-   let mut message = String::from("one kind active, different can't borrow");
-   let m1 = &message;
-   let m2 = &message;
-   let m3 = &mut message;
+struct User {
+    name: String,
+    age: u32,
+}
 
-   println!("{} {} {}", m1, m2, m3);
+fn main() {
+    let user = User { name: String::from("Alice"), age: 30 };
+
+    let name = user.name;         // ย้ายเฉพาะ field name ออกมา
+    println!("{}", user.name);    // ERROR: user.name ถูกย้ายไปแล้ว
+    println!("{}", user.age);     // ใช้ได้ปกติ — age เป็น Copy ไม่ได้ถูกย้าย
 }
 ```
 
 **Correct Code**
 
 ```rust
-fn main(){
-   let mut message = String::from("one kind active, different can't borrow");
-   let m1 = &message;
-   let m2 = &message;
-   println!("{} {}", m1, m2);
+struct User {
+    name: String,
+    age: u32,
+}
 
-   let m3 = &mut message;
-   println!("{}", m3);
+fn main() {
+    let user = User { name: String::from("Alice"), age: 30 };
+
+    let name = user.name.clone();
+    println!("{}", user.name);    
+    println!("{}", user.age);     
 }
 ```
 
 **Why?**
 
-`+ m1, m2 ถูกใช้ครั้งสุดท้ายที่ println!("{} {}", m1, m2); → หลังจากบรรทัดนี้ borrow ของทั้งคู่ก็ "จบ" ทันที (ไม่ต้องรอถึงปิด } ของ main)`
-
-`+ พอถึงบรรทัด let m3 = &mut message; ไม่มี immutable borrow ไหนยังค้างอยู่แล้ว เพราะฉะนั้นการสร้าง mutable borrow (m3) จึงไม่ไปซ้อนทับกับ m1, m2`
+`clone field นั้นถ้าต้องการใช้ทั้งสองที่ หรือ destructure struct ทั้งหมดแล้วสร้างใหม่ตามที่ต้องการ หรือจัดโครงสร้างโค้ดใหม่ให้การ move เกิดขึ้นเป็นลำดับสุดท้าย`
 
 ---
-### Mistake 4 — `การแก้ไข Collection ในขณะที่กำลังวนลูป (Iterating) อยู่`
+### Mistake 4 — `Move ค่าเข้าไปใน loop แล้วพยายามใช้ซ้ำ`
 
 **Problem**
 
-`ไม่สามารถเปลี่ยนขนาดหรือข้อมูลภายใน Vector หรือ Map ได้ในขณะที่กำลังวนลูปอ่านค่าอยู่ เนื่องจากตัวลูปเองกำลังถือครอง Reference ของ Collection นั้นเอาไว้`
+`การเรียก greet(name) ครั้งแรกจะย้าย name เข้าไปในฟังก์ชัน พอถึงรอบถัดไปของ loop name ก็ไม่มีอยู่แล้ว compiler จะฟ้องว่าการเรียกครั้งที่สองใช้ค่าที่ถูกย้ายไปแล้ว นี่เป็นข้อผิดพลาดที่พบบ่อยมากเวลาแปลงโค้ดแบบ "loop ที่ใช้ตัวแปรซ้ำ" มาจากภาษาอื่น`
 
 **Incorrect Code**
 
 ```rust
-fn main(){
-   let mut numbers = vec![1, 2, 3];
+fn main() {
+    let name = String::from("Alice");
 
-  for num in &numbers {
-      if *num == 2 {
-          numbers.push(4);
-      }
-  }
+    for i in 0..3 {
+        greet(name);   // ERROR รอบที่ 2: name ถูกย้ายไปแล้ว
+    }
+}
+
+fn greet(name: String) {
+    println!("Hello, {}", name);
 }
 ```
 
 **Correct Code**
 
 ```rust
-fn main(){
-  let mut numbers = vec![1, 2, 3];
-  let mut nums = vec![];
-  for num in &numbers {
-      if *num == 2 {
-          nums.push(4);
-      }
-  }
-  numbers.extend(nums);
-  println!("{:?}", numbers);
+fn main() {
+    let name = String::from("Alice");
+
+    for i in 0..3 {
+        println!("Hello, {}", name);
+    }
+}
+// another way is using clone when we want to use function
+fn greet(name: String) {
+    println!("Hello, {}", name);
 }
 ```
 
 **Why?**
 
-`ในระหว่าง loop for num in &numbers จะถือ immutable borrow ของ numbers ตลอดทั้ง loop แต่สังเกตว่าในนี้ ไม่มีตรงไหนพยายามแก้ไข numbers เลย แก้ไขแค่ nums ซึ่งเป็น Vec เปล่าๆ อีกตัวที่ไม่เกี่ยวข้องกับ borrow เดิมเลย ดังนั้นจึงไม่มีการชนกัน อ่าน numbers และเขียนลง nums ซึ่งเป็นคนละหน่วยความจำกัน ไม่มี overlap`
+`clone ข้างในลูปถ้าต้องการสำเนาใหม่ทุกรอบ หรือจัดโครงสร้างโค้ดใหม่ให้ฟังก์ชันรับค่าไปแล้ว return กลับมา`
 
 ---
+
 ### Mistake 5 — `Anti-Pattern: "Clone ทุกอย่าง"`
 
 **Problem**
