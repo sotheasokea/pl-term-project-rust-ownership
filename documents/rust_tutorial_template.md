@@ -399,7 +399,9 @@ fn main() {
 
 **Member 1**
 
-`[สิ่งที่รับผิดชอบ]`
+`Introduction`<br>
+`Concept+Short Code`<br>
+`Importance Syntax & Rules`<br>
 
 **Member 2**
 
