@@ -121,7 +121,7 @@ fn main() {
 
 ### Example 1 — `Move`
 
-**Purpose:** `การเปลี่ยน ownership`
+**Purpose:** `การย้าย ownership`
 
 ```rust
 fn main() {
@@ -139,29 +139,37 @@ hello
 
 **Explanation**
 
-`ในตอนแรก s1 เป็นเจ้าของ String hello แต่พอบรรทัดต่อมามีการประกาศให้ s2 = s1 s2จึงเป็นเจ้าของ String hello แทน ถ้าเรา print s1 ก็จะ Error`
+`ตอนแรก s1 ownership อยู่กับ s1 พอประกาศ s2 = s1 ownership ก็ถูกย้ายไปอยู่ที่ s2 s1ก็จะไม่สามารถใช้ได้`
 
 ---
 
-### Example 2 — `[ชื่อ Example]`
+### Example 2 — `Clone`
 
-**Purpose:** `[ต้องการสาธิตอะไร]`
+**Purpose:** `การ clone ค่าเพื่อที่จะนำไปใช้ใน function โดยที่ownershipไม่ถูกย้ายเข้าไป function ด้วย `
 
 ```rust
-fn main() {
-    // Write your runnable Rust code here
+fn main(){
+  let s: String = String::from("Hello, world!");
+  print_string(s.clone());
+  println!("{}", s); 
+}
+
+
+fn print_string(s: String) {
+  println!("{}", s);
 }
 ```
 
 **Expected Output**
 
 ```text
-[expected output]
+Hello, world!
+Hello, world!
 ```
 
 **Explanation**
 
-`[อธิบาย code]`
+`ในตอนที่เราใช้ function print_string แล้วรับparameterไป ownership ก็จะถูกย้ายไปที่ print_string ทำให้ค่า s ใน main ใช้ไม่ได้ เราจึง clone s แล้วค่อยส่งเป็น parameterไปในfunction ค่าที่ส่งก็จะเป็นค่าที่ copy มาแล้วก็จะถูก drop ตอนจบ functionไป`
 
 ---
 
