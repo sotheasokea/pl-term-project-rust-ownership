@@ -339,16 +339,6 @@ Rust เลือกใช้ Ownership เป็นส่วนสำคัญ�
 3. Ownership-based Memory Management  คือ Ownership + Borrow Checking ตรวจสอบกฎสำคัญตอน Compile Time โดยไม่ต้องใช้ GC สำหรับ memory management ปกติ เช่น Rust 
 
 
-**Comparison Language:** `[Python / C / C++ / Java / Kotlin / ...]`
-
-| Aspect | Rust | Other Language |
-|---|---|---|
-| Syntax | `[อธิบาย]` | `[อธิบาย]` |
-| Semantics / Behavior | `[อธิบาย]` | `[อธิบาย]` |
-| Type System | `[อธิบาย]` | `[อธิบาย]` |
-| Memory Management | `[อธิบาย]` | `[อธิบาย]` |
-| Safety | `[อธิบาย]` | `[อธิบาย]` |
-
 | Aspect                     | C                            | C++                                | Java       | Python                 | C#         | Go                           | **Rust**                  |
 | -------------------------- | ---------------------------- | ---------------------------------- | ---------- | ---------------------- | ---------- | ---------------------------- | ------------------------- |
 | Memory Model               | Manual                       | Manual + RAII                      | GC         | GC / ref counting + GC | GC         | GC                           | **Ownership**             |
@@ -358,69 +348,281 @@ Rust เลือกใช้ Ownership เป็นส่วนสำคัญ�
 | Compile-time Memory Safety | Limited                      | Depends on usage/features          | Partial    | Partial                | Partial    | Stronger runtime/type safety | **Strong**                |
 | Main Trade-off             | Control vs safety            | Control + abstractions             | Runtime GC | Runtime management     | Runtime GC | Runtime GC                   | **Compile-time checking** |
 
+### 10.1 การจัดการหน่วยความจำด้วยตนเอง Manual Memory Management
 
-**1. Manual Memory Management**
+#### C — Normal
 
-**C — Normal**
+ในภาษา C โปรแกรมเมอร์จะต้องเป็นผู้จอง (Allocate) และคืน (Release) พื้นที่ในหน่วยความจำด้วยตัวเองอย่างชัดเจน
 
-int *p = malloc(sizeof(int));
+```c
+#include <stdio.h>
+#include <stdlib.h>
 
-*p = 10;
+void print_message(char *message) {
+    printf("%s\n", message);
+    free(message);
+}
 
-free(p);
+int main() {
+    char *message = malloc(20);
 
-**C — Risk Example**
+    if (message != NULL) {
+        snprintf(message, 20, "Hello C");
+        print_message(message);
+    }
 
-int *p = malloc(sizeof(int));
+    return 0;
+}
+```
 
-free(p);
+โปรแกรมเมอร์มีหน้าที่รับผิดชอบในการดูแลช่วงอายุ (Lifetime) ของหน่วยความจำที่ถูกจองไว้
 
-printf("%d", *p);
+#### C — ตัวอย่างความเสี่ยง Risk Example
 
-**Rust — Ownership**
+If the programmer accesses memory after it has been released, a use-after-free bug can occur.
 
-let s = String::from("hello");
+```c
+#include <stdio.h>
+#include <stdlib.h>
 
-let t = s;
+void print_message(char *message) {
+    printf("%s\n", message);
+    free(message);
+}
 
-// println!("{}", s); // Compile-time error
+int main() {
+    char *message = malloc(20);
 
-**2. Automatic Memory Management**
+    if (message != NULL) {
+        snprintf(message, 20, "Hello C");
 
+        print_message(message);
 
-Data d = new Data();
+        printf("%s\n", message); // Use-after-free
+    }
+
+    return 0;
+}
+```
+
+หากโปรแกรมเมอร์เข้าถึงหน่วยความจำหลังจากที่มันถูกคืนไปแล้ว อาจทำให้เกิดบั๊กประเภท Use-after-free ได้
+
+---
+
+#### Rust — Ownership
+
+Rust ใช้กฎความเป็นเจ้าของ (Ownership Rules) ในการควบคุมวิธีใช้งานค่าต่าง ๆ และกำหนดว่าทรัพยากรเหล่านั้นจะถูกคืนเมื่อใด
+
+```rust
+fn print_message(message: String) {
+    println!("{}", message);
+}
+
+fn main() {
+    let message = String::from("Hello Rust");
+
+    print_message(message);
+
+    // println!("{}", message);
+    // Compile-time error: use of moved value
+}
+```
+
+ในตัวอย่างนี้ ความเป็นเจ้าของของ message ได้ถูกย้าย (Move) เข้าไปในฟังก์ชัน print_message() แล้วคอมไพเลอร์ (Compiler) จะป้องกันไม่ให้ตัวแปรเดิมถูกนำกลับมาใช้งานอีกหลังจากที่ถูกย้ายไปแล้ว
+
+---
+
+### 10.2 การจัดการหน่วยความจำอัตโนมัติ Automatic Memory Management
+
+ภาษาอย่าง Java จะใช้ระบบการจัดการหน่วยความจำแบบอัตโนมัติ
+
+#### Java — Normal
+
+```java
+class Data {
+    String message;
+
+    Data(String message) {
+        this.message = message;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Data d = new Data("Hello Java");
+
+        System.out.println(d.message);
+
+        d = null; // Object may become unreachable
+    }
+}
+```
+
+โปรแกรมเมอร์ไม่จำเป็นต้องเรียกใช้ฟังก์ชันอย่าง free() เพื่อคืนออบเจกต์ด้วยตนเอง
+
+เมื่อออบเจกต์นั้นไม่สามารถเข้าถึงได้อีกต่อไป (Unreachable) ในภายหลังมันจะถูกเก็บกวาดและคืนพื้นที่โดยตัวรวบรวมขยะ (Garbage Collector หรือ GC)
+
+#### Java —  ข้อดีข้อเสียในเชิงแนวคิด Conceptual Trade-off Java
+
+```text
+ออบเจกต์เข้าถึงไม่ได้แล้ว (Unreachable)
+        ↓
+GC ตรวจพบออบเจกต์นั้น
+        ↓
+Runtime คืนพื้นที่หน่วยความจำ
+
+```
+
+แนวทางนี้ช่วยลดภาระหน้าที่ของโปรแกรมเมอร์ในการคืนหน่วยความจำด้วยตัวเอง แต่ส่งผลให้การจัดการหน่วยความจำกลายไปเป็นภาระงานส่วนหนึ่งของระบบรันไทม์ (Runtime System) แทน
+
+---
+
+### 10.3 การจัดการหน่วยความจำด้วยระบบความเป็นเจ้าของ Ownership-Based Memory Management
+
+Rust ใช้กฎความเป็นเจ้าของและการตรวจสอบตั้งแต่ตอนคอมไพล์ (Compile-time Checking) แทนที่จะพึ่งพา Garbage Collector ในการจัดการหน่วยความจำทั่วไป
+
+#### Rust — Ownership
+
+```rust
+fn main() {
+    let s = String::from("hello");
+
+    let t = s;
+
+    // println!("{}", s);
+    // Compile-time error: use of moved value
+}
+```
+
+เมื่อ s ถูกกำหนดค่าให้กับ t ความเป็นเจ้าของของ String จะถูกย้ายไป
+
+คอมไพเลอร์จะคอยติดตามและตรวจสอบกฎข้อนี้ตั้งแต่ก่อนที่โปรแกรมจะทำงาน
+
+---
+
+#### Rust — ขอบเขตและการทำลายค่า Scope and Drop
+
+```rust
+fn main() {
+    {
+        let data = String::from("hello");
+
+        println!("{}", data);
+    }
+
+    // data is dropped at the end of its scope
+}
+```
+
+เมื่อ data หลุดออกนอกขอบเขต (Scope) Rust จะเรียกใช้งานพฤติกรรมการทำลายค่า (Drop) ที่เหมาะสมให้กับค่านั้นโดยอัตโนมัติ
+
+สิ่งนี้ทำให้ Rust มีพฤติกรรมการจัดการทรัพยากรที่คาดเดาได้แน่นอน (Deterministic) โดยไม่จำเป็นต้องใช้ Garbage Collector สำหรับค่าทั่วไปที่ถูกจัดการด้วยระบบความเป็นเจ้าของ
+
+---
+
+### 10.4ข้อดีข้อเสียด้านประสิทธิภาพและรันไทม์ Performance and Runtime Trade-off
+
+รูปแบบการจัดการหน่วยความจำส่งผลกระทบต่อจำนวนภาระงานที่ระบบรันไทม์ (Runtime) ต้องแบกรับด้วยเช่นกัน
+
+#### Java
+
+Java ใช้ Garbage Collector ในการตามเก็บกวาดออบเจกต์ที่ไม่สามารถเข้าถึงได้แล้วโดยอัตโนมัติ
+
+```text
+โปรแกรม (Program)
+   ↓
+จองพื้นที่ออบเจกต์
+   ↓
+ออบเจกต์เข้าถึงไม่ได้แล้ว
+   ↓
+ตัวรวบรวมขยะ (Garbage Collector)
+   ↓
+คืนพื้นที่หน่วยความจำ
+
+```
+
+การเก็บกวาดขยะช่วยให้การจัดการหน่วยความจำสะดวกและเป็นอัตโนมัติ แต่ก็ต้องแลกมาด้วยภาระงานของรันไทม์ (Runtime Work) ที่เกิดขึ้นจากการคอยติดตามและเก็บกวาดออบเจกต์เหล่านั้น
+
+#### Rust
+
+Rust ทำการตรวจสอบกฎความเป็นเจ้าของและการยืมข้อมูล (Borrowing Rules) ตั้งแต่ขั้นตอนการคอมไพล์เป็นหลัก
+
+```text
+ซอร์สโค้ด Rust (Rust Source Code)
+       ↓
+คอมไพเลอร์ตรวจสอบกฎความเป็นเจ้าของ
+       ↓
+โปรแกรมที่คอมไพล์เสร็จแล้ว (Compiled Program)
+       ↓
+รันไทม์ (Runtime)
+       ↓
+ไม่จำเป็นต้องมี GC สำหรับการจัดการความเป็นเจ้าของทั่วไป
+
+```
+
+เนื่องจาก Rust ไม่จำเป็นต้องใช้ Garbage Collector สำหรับการจัดการหน่วยความจำที่อยู่ภายใต้ระบบความเป็นเจ้าของทั่วไป การจัดการทรัพยากรจึงมีความเสถียรและคาดเดาประสิทธิภาพได้ง่ายกว่าในระหว่างที่โปรแกรมทำงาน
+
+```rust
+fn main() {
+    let data = String::from("Hello Rust");
+
+    println!("{}", data);
+
+} // data is dropped here
+```
+
+อย่างไรก็ตาม สิ่งนี้ไม่ได้หมายความว่า Rust จะเร็วกว่า Java เสมอไป เพราะประสิทธิภาพที่แท้จริงจะขึ้นอยู่กับตัวโปรแกรม, ลักษณะของภาระงาน (Workload), การออปติไมซ์ของคอมไพเลอร์, รูปแบบการจัดสรรหน่วยความจำ (Allocation Patterns) 
+และพฤติกรรมของรันไทม์ทว่า โมเดลความเป็นเจ้าของของ Rust ช่วยให้การตรวจสอบความปลอดภัยของหน่วยความจำเสร็จสิ้นลงตั้งแต่ตอนคอมไพล์ โดยสามารถหลีกเลี่ยงความจำเป็นในการใช้ Garbage Collector แบบทั่วไปได้.
+
+---
+
+### 10.5 โจทย์เดียวกัน แต่การออกแบบภาษาต่างกัน Same Problem, Different Language Design
+
+เราสามารถเขียนโปรแกรมเพื่อทำงานชิ้นเดียวกันได้ โดยใช้โมเดลการจัดการหน่วยความจำที่แตกต่างกันตามการออกแบบของแต่ละภาษา
+
+#### C
+
+```c
+char *message = malloc(20);
+
+if (message != NULL) {
+    snprintf(message, 20, "Hello C");
+    printf("%s\n", message);
+
+    free(message);
+}
+```
+
+โปรแกรมเมอร์ต้องเข้ามาควบคุมและจัดการทรัพยากรด้วยตนเองอย่างเด่นชัด
+
+#### Java
+
+```java
+Data d = new Data("Hello Java");
+
+System.out.println(d.message);
 
 d = null;
+```
 
-**Java — Conceptual Trade-off**
+โปรแกรมเมอร์ไม่ต้องสั่งคืนพื้นที่ออบเจกต์ด้วยตนเอง
 
-Object becomes unreachable
-        ↓
-GC identifies it
-        ↓
-Runtime reclaims memory
+ระบบรันไทม์จะเป็นผู้กำหนดเองว่าออบเจกต์ที่เข้าถึงไม่ได้แล้วเหล่านั้นควรจะถูกเก็บกวาดเมื่อใด
 
+#### Rust
 
-**Rust — Ownership**
+```rust
+fn main() {
+    let message = String::from("Hello Rust");
 
+    println!("{}", message);
 
-{
-    let data = String::from("hello");
-}
-// dropped at the end of scope
+} // message is automatically dropped here
+```
 
+Rust ผูกช่วงอายุของทรัพยากร (Resource Lifetime) ไว้กับความเป็นเจ้าของและขอบเขตของตัวแปร (Scope)
 
-
-| Paradigm              | Languages | Memory Management                            |
-| --------------------- | --------- | -------------------------------------------- |
-| Manual                | C         | Programmer explicitly allocates/deallocates  |
-| Manual + Abstractions | C++       | Manual + RAII / Smart Pointers               |
-| Automatic             | Java      | Garbage Collection                           |
-| Automatic             | Python    | Automatic memory management / GC mechanisms  |
-| Automatic             | C#        | Garbage Collection                           |
-| Automatic             | Go        | Garbage Collection                           |
-| **Ownership**         | **Rust**  | **Ownership + compile-time checking + Drop** |
-
+---
 
 ### Analysis
 
